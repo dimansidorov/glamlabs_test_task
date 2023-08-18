@@ -18,13 +18,13 @@ class InitDriver:
         self.driver.quit()
 
 
-def get_instagram_photo_links(username: str, count: int):
+async def get_instagram_photo_links(username: str, count: int):
     with InitDriver() as driver:
         profile_url = f"https://www.instagram.com/{username}/"
         driver.get(profile_url)
         time.sleep(3)
 
-        driver.execute_script("window.scrollTo(0, 8000);")
+        driver.execute_script("window.scrollTo(0, 2000);")
 
         images = driver.find_elements(By.CSS_SELECTOR, 'div._aagv img')
         images = [image.get_attribute('src') for image in images]
@@ -32,4 +32,5 @@ def get_instagram_photo_links(username: str, count: int):
         return images
 
 
-print(get_instagram_photo_links('dimansidorov', 3))
+if __name__ == '__main__':
+    print(get_instagram_photo_links('dimansidorov', 3))
