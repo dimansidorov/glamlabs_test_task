@@ -1,36 +1,63 @@
-import time
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
+import asyncio
+
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
+SLEEP_TIME = 2
+URL = 'www.instagram.com'
 
 
 class InitDriver:
-    def __enter__(self):
+    async def __aenter__(self):
         options = Options()
-        # options.add_argument("--headless")
-        service = Service('chromedriver')
-        self.driver = webdriver.Chrome(options=options, service=service)
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+
+        remote_url = "http://selenium_chrome:4444/wd/hub"
+
+        self.driver = webdriver.Remote(
+            command_executor=remote_url,
+            options=options
+        )
         return self.driver
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.driver.quit()
 
 
 async def get_instagram_photo_links(username: str, count: int):
-    with InitDriver() as driver:
-        profile_url = f"https://www.instagram.com/{username}/"
+    async with InitDriver() as driver:
+        profile_url = f"https://{URL}/{username}/"
         driver.get(profile_url)
-        time.sleep(3)
+        await asyncio.sleep(SLEEP_TIME)
 
-        driver.execute_script("window.scrollTo(0, 2000);")
+        images = []
 
-        images = driver.find_elements(By.CSS_SELECTOR, 'div._aagv img')
-        images = [image.get_attribute('src') for image in images]
+        while len(images) < count:
+            try:
+                load_more_button = WebDriverWait(driver, SLEEP_TIME).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'button._any9._anya._anyc'))
+                )
+                load_more_button.click()
+            except Exception as err:
+                print(err)
 
-        return images
 
 
-if __name__ == '__main__':
-    print(get_instagram_photo_links('dimansidorov', 3))
+            visible_images = driver.find_elements(By.CSS_SELECTOR, 'div._aagv img')
+            visible_images = [image.get_attribute('src') for image in visible_images]
+
+            new_images = [image for image in visible_images if image not in images]
+            images.extend(new_images)
+
+            if len(images) == 0:
+                break
+
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            await asyncio.sleep(SLEEP_TIME)
+
+        return images[:count]
