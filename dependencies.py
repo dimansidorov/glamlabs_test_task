@@ -14,11 +14,14 @@ URL = 'www.instagram.com'
 class InitDriver:
     async def __aenter__(self):
         options = Options()
-        # options.add_argument("--headless")
-        service = Service('chromedriver')
-        self.driver = webdriver.Chrome(
-            options=options,
-            # service=service
+        options.add_argument("--headless")
+        options.add_argument("--no-sandbox")
+
+        remote_url = "http://selenium_chrome:4444/wd/hub"
+
+        self.driver = webdriver.Remote(
+            command_executor=remote_url,
+            options=options
         )
         return self.driver
 
@@ -40,22 +43,19 @@ async def get_instagram_photo_links(username: str, count: int):
                     EC.presence_of_element_located((By.CSS_SELECTOR, 'button._any9._anya._anyc'))
                 )
                 load_more_button.click()
-            except:
-                pass
+            except Exception as err:
+                print(err)
 
-            # script = """
-            # var popupElement = document.querySelector('.x1ja2u2z.x1afcbsf.x1a2a7pz.x6ikm8r.x10wlt62.x71s49j.x6s0dn4.x78zum5.xdt5ytf.xl56j7k.x1n2onr6');
-            # if (popupElement) {
-            #     popupElement.style.display = 'none';
-            # }
-            # """
-            # driver.execute_script(script)
+
 
             visible_images = driver.find_elements(By.CSS_SELECTOR, 'div._aagv img')
             visible_images = [image.get_attribute('src') for image in visible_images]
 
             new_images = [image for image in visible_images if image not in images]
             images.extend(new_images)
+
+            if len(images) == 0:
+                break
 
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
             await asyncio.sleep(SLEEP_TIME)
