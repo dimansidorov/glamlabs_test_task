@@ -1,8 +1,7 @@
-FROM python:3.11.0-alpine
+FROM joyzoursky/python-chromedriver:3.8
 
 WORKDIR /src
 
-RUN apk update && apk add gcc libc-dev
 RUN pip install --upgrade pip
 
 COPY requirements.txt /src
