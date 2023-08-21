@@ -8,12 +8,5 @@ services:
       - "8080:8080"
     volumes:
       - ..:/src
-    depends_on:
-      - selenium_chrome
 
-  selenium_chrome:
-    image: selenium/standalone-chrome:latest
-    ports:
-      - "4444:4444"
-    environment:
-      - SE_EVENT_BUS_HOST=selenium_chrome
+
