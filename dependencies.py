@@ -3,7 +3,6 @@ import time
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
 import asyncio
 
 from selenium.webdriver.support.wait import WebDriverWait
@@ -14,6 +13,10 @@ URL = 'www.instagram.com'
 
 
 class EmptyPageException(Exception):
+    pass
+
+
+class PageLoadError(Exception):
     pass
 
 
@@ -35,13 +38,18 @@ class InitDriver:
 
 async def get_instagram_photo_links(username: str, count: int):
     async with InitDriver() as driver:
-        print("start")
         profile_url = f"https://{URL}/{username}/"
         driver.get(profile_url)
-        time.sleep(SLEEP_TIME)
+        await asyncio.sleep(SLEEP_TIME)
+
+        error_element = driver.find_elements(
+            By.CSS_SELECTOR,
+            'span.x1lliihq.x1plvlek.xryxfnj.x1n2onr6.x193iq5w.xeuugli.x1fj9vlw.x13faqbe.x1vvkbs.x1s928wv.xhkezso.x1gmr53x.x1cpjm7i.x1fgarty.x1943h6x.x1i0vuye.x1ms8i2q.xo1l8bm.x5n08af.x4zkp8e.xw06pyt.x10wh9bi.x1wdrske.x8viiok.x18hxmgj'
+        )
+        if error_element:
+            raise PageLoadError()
 
         images = []
-
         while len(images) < count:
             try:
                 load_more_button = WebDriverWait(driver, SLEEP_TIME).until(
@@ -64,7 +72,6 @@ async def get_instagram_photo_links(username: str, count: int):
                 break
 
             driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            time.sleep(SLEEP_TIME)
+            await asyncio.sleep(SLEEP_TIME)
 
-        print("end")
         return images[:count] if count < len(images) else images
